@@ -1,0 +1,192 @@
+import seaborn as sns
+import pandas as pd
+
+titanic = sns.load_dataset('titanic')
+
+# تعمّد إضافة صفوف مكررة (زي ما بيصير بخطأ إدخال بيانات حقيقي)
+duplicated_rows = titanic.sample(15, random_state=42)
+messy_titanic = pd.concat([titanic, duplicated_rows], ignore_index=True)
+
+# تعمّد خلط شكل النصوص ببعض القيم (Inconsistent Casing، زي ما بيصير لما ناس مختلفين يدخلوا بيانات)
+messy_titanic.loc[messy_titanic.sample(20, random_state=1).index, 'embark_town'] = \
+    messy_titanic.loc[messy_titanic.sample(20, random_state=1).index, 'embark_town'].str.upper()
+
+# جدول ثاني صغير لازم تدمجه مع messy_titanic
+class_info = pd.DataFrame({
+    'pclass': [1, 2, 3],
+    'class_description': ['First Class - Luxury', 'Second Class - Standard', 'Third Class - Economy'],
+    'deck_access': ['Full Access', 'Limited Access', 'No Access']
+})
+print("Shape of messy_titanic:")
+print(messy_titanic.shape)
+
+print("\nColumns:")
+print(messy_titanic.columns)
+
+missing = messy_titanic.isnull().sum()
+
+print(missing)
+missing_percent = (
+    messy_titanic.isnull().mean() * 100
+).sort_values(ascending=False)
+
+print(missing_percent)
+duplicates = messy_titanic.duplicated().sum()
+
+print("Number of duplicated rows:", duplicates)
+print(
+    messy_titanic["embark_town"].unique()
+)
+print("عدد الصفوف قبل الحذف:")
+print(messy_titanic.shape[0])
+
+messy_titanic = messy_titanic.drop_duplicates()
+
+print("\nعدد الصفوف بعد الحذف:")
+print(messy_titanic.shape[0])
+print("عدد الصفوف المكررة المتبقية:")
+print(messy_titanic.duplicated().sum())
+messy_titanic["embark_town"] = (
+    messy_titanic["embark_town"]
+    .str.title()
+)
+print(messy_titanic["embark_town"].unique())
+age_mean = messy_titanic["age"].mean()
+
+messy_titanic["age"] = (
+    messy_titanic["age"]
+    .fillna(age_mean)
+)
+embarked_mode = (
+    messy_titanic["embarked"]
+    .mode()[0]
+)
+
+messy_titanic["embarked"] = (
+    messy_titanic["embarked"]
+    .fillna(embarked_mode)
+)
+print(messy_titanic["embarked"].isnull().sum())
+messy_titanic = messy_titanic.drop(columns=["deck"])
+print("deck" in messy_titanic.columns)
+clean_titanic = pd.merge(
+    messy_titanic,
+    class_info,
+    on="pclass",
+    how="left"
+)
+print(clean_titanic.head())
+
+print(clean_titanic.shape)
+print(
+    clean_titanic[
+        ["pclass", "class_description", "deck_access"]
+    ].head()
+)
+print("التكرارات:", clean_titanic.duplicated().sum())
+
+print("\nالقيم المفقودة:")
+print(clean_titanic.isnull().sum())
+
+print("\nالقيم الفريدة في embark_town:")
+print(clean_titanic["embark_town"].unique())
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import plotly.express as px
+plt.figure(figsize=(8,5))
+
+sns.countplot(
+    data=clean_titanic,
+    x="pclass",
+    hue="sex"
+)
+
+plt.title("Passenger Distribution by Class and Gender")
+plt.xlabel("Passenger Class")
+plt.ylabel("Number of Passengers")
+
+plt.show()
+plt.figure(figsize=(10,6))
+
+sns.boxplot(
+    data=clean_titanic,
+    x="class_description",
+    y="fare"
+)
+
+plt.title("Fare Distribution by Passenger Class")
+plt.xlabel("Passenger Class")
+plt.ylabel("Fare")
+
+plt.xticks(rotation=15)
+
+plt.show()
+survival_rate = (
+    clean_titanic
+    .groupby("embark_town")["survived"]
+    .mean()
+    .reset_index()
+)
+
+plt.figure(figsize=(8,5))
+
+sns.barplot(
+    data=survival_rate,
+    x="embark_town",
+    y="survived"
+)
+
+plt.title("Survival Rate by Embark Town")
+plt.xlabel("Embark Town")
+plt.ylabel("Average Survival Rate")
+
+plt.show()
+clean_titanic["has_family"] = (
+    clean_titanic["sibsp"] +
+    clean_titanic["parch"] > 0
+)
+family_survival = (
+    clean_titanic
+    .groupby("has_family")["survived"]
+    .mean()
+    .reset_index()
+)
+
+fig = px.bar(
+    family_survival,
+    x="has_family",
+    y="survived",
+    color="has_family",
+    title="Survival Rate Based on Family Presence",
+    labels={
+        "has_family":"Has Family",
+        "survived":"Survival Rate"
+    }
+)
+
+fig.show()
+fig.write_html("family_survival.html")
+age_avg = (
+    clean_titanic
+    .groupby(["class_description","survived"])["age"]
+    .mean()
+    .reset_index()
+)
+
+plt.figure(figsize=(10,6))
+
+sns.barplot(
+    data=age_avg,
+    x="class_description",
+    y="age",
+    hue="survived"
+)
+
+plt.title("Average Age by Passenger Class and Survival")
+plt.xlabel("Passenger Class")
+plt.ylabel("Average Age")
+
+plt.xticks(rotation=15)
+
+plt.show()
