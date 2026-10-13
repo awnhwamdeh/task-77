@@ -1,0 +1,25 @@
+
+import numpy as np
+
+np.random.seed(10)
+n_orders = 500
+dates = pd.date_range('2023-01-01', '2024-12-31', freq='D')
+
+products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones', 'Webcam', 'Speaker', 'Tablet']
+categories = {'Laptop': 'Electronics', 'Mouse': 'Accessories', 'Keyboard': 'Accessories',
+              'Monitor': 'Electronics', 'Headphones': 'Accessories', 'Webcam': 'Accessories',
+              'Speaker': 'Electronics', 'Tablet': 'Electronics'}
+prices = {'Laptop': 500, 'Mouse': 15, 'Keyboard': 25, 'Monitor': 150,
+          'Headphones': 40, 'Webcam': 35, 'Speaker': 60, 'Tablet': 300}
+cities = ['عمان', 'إربد', 'الزرقاء', 'العقبة']
+
+orders = pd.DataFrame({
+    'order_date': np.random.choice(dates, n_orders),
+    'product': np.random.choice(products, n_orders),
+    'quantity': np.random.randint(1, 5, n_orders),
+    'city': np.random.choice(cities, n_orders, p=[0.5, 0.2, 0.2, 0.1]),
+    'customer_id': np.random.randint(1, 101, n_orders)
+})
+orders['category'] = orders['product'].map(categories)
+orders['unit_price'] = orders['product'].map(prices)
+orders['revenue'] = orders['quantity'] * orders['unit_price']
